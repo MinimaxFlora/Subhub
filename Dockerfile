@@ -68,8 +68,8 @@ RUN python3 -m ensurepip && \
 FROM alpine:3.16
 LABEL maintainer="MinimaxFlora"
 
-# 运行时依赖 + 进程管理
-RUN apk add --no-cache pcre2 libcurl yaml-cpp python3 py3-supervisor
+# 运行时依赖 + 进程管理 + 时区数据
+RUN apk add --no-cache pcre2 libcurl yaml-cpp python3 supervisor tzdata
 
 # Caddy（从官方镜像复制二进制）
 COPY --from=caddy:2-alpine /usr/bin/caddy /usr/bin/caddy
