@@ -1,0 +1,47 @@
+html {
+  font-size: 62.5%;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.42857143;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+
+textarea {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+a {
+  background: transparent;
+  text-decoration: none;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+#app {
+  min-height: 100vh;
+}

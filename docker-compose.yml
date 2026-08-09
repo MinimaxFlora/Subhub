@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  # 后端：subconverter 订阅转换服务
+  subconverter:
+    image: asdlokj1qpi23/subconverter:latest
+    container_name: kejizero-subconverter
+    ports:
+      - "25500:25500"
+    restart: always
+
+  # 前端：Kejizero订阅转换 Web 界面
+  frontend:
+    build: ./frontend
+    container_name: kejizero-sub-web
+    ports:
+      - "8080:80"
+    restart: always
+    depends_on:
+      - subconverter
