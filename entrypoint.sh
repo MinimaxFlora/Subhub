@@ -12,6 +12,10 @@ export FRONTEND_DOMAIN="${FRONTEND_DOMAIN:-localhost}"
 export BACKEND_DOMAIN="${BACKEND_DOMAIN:-localhost}"
 export SHORTLINK_DOMAIN="${SHORTLINK_DOMAIN:-localhost}"
 
+# ---- 前端调用的后端/短链完整地址（供 supervisord 展开）----
+export BACKEND_URL="${BACKEND_URL:-http://localhost:25500}"
+export SHORTLINK_URL="${SHORTLINK_URL:-http://localhost:7999}"
+
 # ---- TLS 证书邮箱 ----
 export ACME_EMAIL="${ACME_EMAIL:-admin@kejizero.xyz}"
 

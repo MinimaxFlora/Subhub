@@ -21,7 +21,12 @@
 
 services:
   subhub:
-    build: .
+    build:
+      context: .
+      args:
+        # 前端默认调用的后端/短链地址（从 .env 读取，默认本机）
+        VUE_APP_SUBCONVERTER_DEFAULT_BACKEND: ${BACKEND_URL:-http://localhost:25500}
+        VUE_APP_MYURLS_DEFAULT_BACKEND: ${SHORTLINK_URL:-http://localhost:7999}
     image: zhaoweiwen123/subhub
     container_name: kejizero-subhub
     restart: always

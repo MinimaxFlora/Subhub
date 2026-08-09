@@ -80,11 +80,12 @@ COPY --from=web-build /app/web/dist /app/web
 # subconverter 后端
 COPY --from=sub-build /subconverter/subconverter /usr/bin/
 COPY --from=sub-build /subconverter/base /base/
+# 生成 subconverter 主配置（pref.example.ini -> pref.ini）
+RUN cp /base/pref.example.ini /base/pref.ini && mkdir -p /etc/caddy
 
 # 短链服务
 COPY shortlink/server.py /app/shortlink/server.py
 
-# Caddy 配置由 entrypoint.sh 动态生成（本机/域名双模式）
 # 进程管理 + 启动脚本
 COPY supervisord.conf /etc/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
