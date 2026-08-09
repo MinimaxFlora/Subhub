@@ -5,7 +5,7 @@
 # ============================================================
 
 # ---------- 阶段1: 构建前端 ----------
-FROM node:18-alpine AS web-build
+FROM node:22-alpine AS web-build
 WORKDIR /app/web
 COPY frontend/ .
 
