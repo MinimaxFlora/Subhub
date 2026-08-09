@@ -4,15 +4,19 @@
 # 一个镜像 zhaoweiwen123/subhub 包含全部服务：
 #   前端(Vue) + 后端(subconverter) + 短链 + Caddy
 #
-# 三个域名通过 environment 传入（不填默认本机 localhost）：
-#   FRONTEND_DOMAIN  前端域名   默认 localhost
-#   BACKEND_DOMAIN   后端域名   默认 localhost
-#   SHORTLINK_DOMAIN 短链域名   默认 localhost
+# 两种模式（通过 environment 设置域名切换）：
 #
-# 本机模式：docker compose up -d --build
-#   前端 http://localhost | 后端 http://localhost:25500 | 短链 http://localhost:7999
+# 1. 本机模式（默认，不填域名）——端口直连：
+#      前端 http://本机IP:8080
+#      后端 http://本机IP:25500
+#      短链 http://本机IP:7999
 #
-# 公网模式：填三个域名 -> Caddy 自动反代 + 自动 HTTPS 证书
+# 2. 域名模式（填了 FRONTEND_DOMAIN 等）——Caddy 反代 + HTTPS：
+#      https://FRONTEND_DOMAIN | https://BACKEND_DOMAIN | https://SHORTLINK_DOMAIN
+#
+# 用法：
+#   本机模式: docker compose up -d --build
+#   域名模式: 在 .env 或 environment 里填三个域名再 up
 # ============================================================
 
 services:
@@ -22,17 +26,22 @@ services:
     container_name: kejizero-subhub
     restart: always
     ports:
+      # 本机模式：端口直连
+      - "8080:8080"      # 前端
+      - "25500:25500"    # 后端 subconverter
+      - "7999:7999"      # 短链
+      # 域名模式：Caddy 80/443
       - "80:80"
       - "443:443"
     environment:
-      # 三个域名（不填默认本机 localhost）
-      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-localhost}
-      BACKEND_DOMAIN: ${BACKEND_DOMAIN:-localhost}
-      SHORTLINK_DOMAIN: ${SHORTLINK_DOMAIN:-localhost}
-      # 前端调用的后端/短链完整地址（不填自动推导）
+      # 三个域名（不填 = 本机模式，填了 = 域名模式）
+      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-}
+      BACKEND_DOMAIN: ${BACKEND_DOMAIN:-}
+      SHORTLINK_DOMAIN: ${SHORTLINK_DOMAIN:-}
+      # 前端调用的后端/短链完整地址（可选，默认自动推导）
       BACKEND_URL: ${BACKEND_URL:-}
       SHORTLINK_URL: ${SHORTLINK_URL:-}
-      # TLS 证书邮箱
+      # TLS 证书邮箱（域名模式用）
       ACME_EMAIL: ${ACME_EMAIL:-admin@kejizero.xyz}
     volumes:
       - subhub_data:/data   # 短链 SQLite 数据持久化

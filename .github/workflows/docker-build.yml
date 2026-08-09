@@ -1,9 +1,8 @@
 name: Build & Push Docker Image
 
 on:
-  # 推送 master 分支时自动构建（域名配置读取 .env.example）
-  push:
-    branches: [master]
+  # 手动触发构建（不自动构建）
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -16,22 +15,20 @@ jobs:
         id: domains
         run: |
           # 从 .env.example 读取域名（与 docker-compose environment 保持一致）
+          # 未填(空) = 本机模式：前端默认后端/短链用本机端口
           BACKEND_DOMAIN=$(grep -E '^BACKEND_DOMAIN=' .env.example | head -1 | cut -d= -f2 | tr -d ' \r')
           SHORTLINK_DOMAIN=$(grep -E '^SHORTLINK_DOMAIN=' .env.example | head -1 | cut -d= -f2 | tr -d ' \r')
-          [ -z "$BACKEND_DOMAIN" ] && BACKEND_DOMAIN="localhost"
-          [ -z "$SHORTLINK_DOMAIN" ] && SHORTLINK_DOMAIN="localhost"
-          # 前端调用的后端/短链地址：填了域名用 https，否则本机 http
-          if [ "$BACKEND_DOMAIN" != "localhost" ]; then
+          if [ -n "$BACKEND_DOMAIN" ]; then
             echo "BACKEND_URL=https://$BACKEND_DOMAIN" >> $GITHUB_ENV
           else
             echo "BACKEND_URL=http://localhost:25500" >> $GITHUB_ENV
           fi
-          if [ "$SHORTLINK_DOMAIN" != "localhost" ]; then
+          if [ -n "$SHORTLINK_DOMAIN" ]; then
             echo "SHORTLINK_URL=https://$SHORTLINK_DOMAIN" >> $GITHUB_ENV
           else
             echo "SHORTLINK_URL=http://localhost:7999" >> $GITHUB_ENV
           fi
-          echo "构建域名: 后端=$BACKEND_DOMAIN 短链=$SHORTLINK_DOMAIN"
+          echo "构建模式: $([ -n "$BACKEND_DOMAIN" ] && echo 域名模式 || echo 本机模式)"
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3

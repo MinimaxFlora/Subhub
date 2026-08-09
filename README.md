@@ -3,7 +3,9 @@
 现代化订阅转换全家桶，**单镜像一键部署**：前端 + 后端 + 短链 + Caddy 网关全部装在一个镜像里。
 基于 [cmliu/sub-web-modify](https://github.com/cmliu/sub-web-modify) 定制，品牌为 **Kejizero订阅转换**。
 
-三个域名通过 `environment` 传入，**不填默认本机地址（localhost）**，填了真实域名则 Caddy 自动反代并签发 HTTPS 证书。
+**两种运行模式：**
+- **本机模式**（默认，不填域名）：端口直连，开箱即用
+- **域名模式**（填了三个域名）：Caddy 自动反代 + HTTPS 证书
 
 ## 功能特性
 
@@ -20,13 +22,12 @@
 ```
 kejizero-sub-converter/
 ├── Dockerfile              # 单镜像多阶段构建（前端构建 + 后端编译 + 运行镜像）
-├── Caddyfile               # Caddy 网关配置（伺服前端静态文件 + 反代后端/短链）
-├── entrypoint.sh           # 启动脚本（设置默认环境变量，交给 supervisord）
+├── entrypoint.sh           # 启动脚本（双模式：本机端口直连 / 域名反代）
 ├── supervisord.conf        # 进程管理（subconverter + shortlink + caddy）
 ├── docker-compose.yml      # 一键部署（单服务）
 ├── .env.example            # 环境变量模板（复制为 .env 修改）
 ├── .dockerignore
-├── .github/workflows/      # Docker Hub 镜像构建工作流
+├── .github/workflows/      # Docker Hub 镜像构建工作流（手动触发）
 ├── frontend/               # Vue 前端（基于 sub-web-modify 定制）
 │   ├── public/             # logo.png / favicon.ico（品牌图）
 │   ├── src/views/Subconverter.vue   # 主页面
@@ -42,7 +43,7 @@ kejizero-sub-converter/
 
 ## 快速开始
 
-### 本机模式（不填域名，直接跑）
+### 模式一：本机模式（默认，不填域名）
 
 ```bash
 docker compose up -d --build
@@ -50,55 +51,60 @@ docker compose up -d --build
 
 | 服务 | 地址 |
 |---|---|
-| 前端 | http://localhost |
-| 后端 | http://localhost:25500 |
-| 短链 | http://localhost:7999 |
+| 前端 | http://本机IP:8080 |
+| 后端 | http://本机IP:25500 |
+| 短链 | http://本机IP:7999 |
 
-### 公网模式（填三个域名，自动 HTTPS）
+### 模式二：域名模式（填三个域名，自动 HTTPS）
 
 ```bash
-# 方式一：环境变量传入
-export FRONTEND_DOMAIN=sub.example.com
-export BACKEND_DOMAIN=api.example.com
-export SHORTLINK_DOMAIN=short.example.com
-docker compose up -d --build
-
-# 方式二：复制 .env.example 为 .env 修改
+# 复制 .env.example 为 .env 修改
 cp .env.example .env
+```
+
+`.env` 里填写（需已解析 A 记录到服务器）：
+```ini
+FRONTEND_DOMAIN=sub.example.com
+BACKEND_DOMAIN=api.example.com
+SHORTLINK_DOMAIN=short.example.com
+```
+
+```bash
 docker compose up -d --build
 ```
 
-Caddy 自动为三个域名申请 HTTPS 证书；前端自动把默认后端指向 `https://BACKEND_DOMAIN`、默认短链指向 `https://SHORTLINK_DOMAIN`。
+| 服务 | 地址 |
+|---|---|
+| 前端 | https://FRONTEND_DOMAIN |
+| 后端 | https://BACKEND_DOMAIN |
+| 短链 | https://SHORTLINK_DOMAIN |
 
 ### 前提条件
 
-- 公网模式：三个域名已添加 A 记录指向服务器公网 IP
-- 服务器开放 80/443 端口
+- 域名模式：三个域名已添加 A 记录指向服务器公网 IP，开放 80/443
+- 本机模式：开放 8080/25500/7999 端口
 - 安装 Docker + Docker Compose
 
 ## 环境变量说明
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `FRONTEND_DOMAIN` | `localhost` | 前端域名（伺服 Vue 静态页面） |
-| `BACKEND_DOMAIN` | `localhost` | 后端（subconverter）域名 |
-| `SHORTLINK_DOMAIN` | `localhost` | 短链域名 |
-| `BACKEND_URL` | 自动推导 | 前端默认调用的后端完整地址（域名非 localhost 时 = https://域名） |
+| `FRONTEND_DOMAIN` | 空（本机模式） | 前端域名，填了即启用域名模式 |
+| `BACKEND_DOMAIN` | 空（本机模式） | 后端（subconverter）域名 |
+| `SHORTLINK_DOMAIN` | 空（本机模式） | 短链域名 |
+| `BACKEND_URL` | 自动推导 | 前端默认调用的后端完整地址（域名模式=https://域名，本机=http://localhost:25500） |
 | `SHORTLINK_URL` | 自动推导 | 前端默认调用的短链完整地址 |
-| `ACME_EMAIL` | `admin@kejizero.xyz` | Let's Encrypt 证书通知邮箱 |
+| `ACME_EMAIL` | `admin@kejizero.xyz` | Let's Encrypt 证书通知邮箱（域名模式用） |
 
 > 单容器架构：Caddy 一个进程伺服前端静态文件 + 反代后端(25500) + 反代短链(7999)，
 > subconverter 与短链服务由 supervisord 管理，`/data` 卷持久化短链数据。
+> 本机模式下 Caddy 监听 8080 伺服前端，后端/短链端口直接映射到宿主机。
 
-## Docker Hub 镜像（GitHub Actions 自动构建）
+## Docker Hub 镜像（手动触发构建）
 
-工作流 `.github/workflows/docker-build.yml` 构建并推送单镜像：
+工作流 `.github/workflows/docker-build.yml` 构建并推送单镜像 `zhaoweiwen123/subhub:latest`。
 
-- `zhaoweiwen123/subhub:latest`
-
-触发方式：
-- **手动**：Actions → Build & Push Docker Image → Run workflow（可选填三个域名）
-- **自动**：push master 分支（改动 frontend/backend/shortlink/Dockerfile/Caddyfile 等时）
+**触发方式**：GitHub Actions → Build & Push Docker Image → **Run workflow**（手动触发，不自动构建）
 
 > 需在仓库 Settings → Secrets and variables → Actions 配置
 > `DOCKERHUB_USERNAME` 和 `DOCKERHUB_TOKEN`。

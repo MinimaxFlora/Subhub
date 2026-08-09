@@ -9,8 +9,8 @@ FROM node:22-alpine AS web-build
 WORKDIR /app/web
 COPY frontend/ .
 
-ARG VUE_APP_SUBCONVERTER_DEFAULT_BACKEND
-ARG VUE_APP_MYURLS_DEFAULT_BACKEND
+ARG VUE_APP_SUBCONVERTER_DEFAULT_BACKEND=http://localhost:25500
+ARG VUE_APP_MYURLS_DEFAULT_BACKEND=http://localhost:7999
 ENV VUE_APP_SUBCONVERTER_DEFAULT_BACKEND=$VUE_APP_SUBCONVERTER_DEFAULT_BACKEND
 ENV VUE_APP_MYURLS_DEFAULT_BACKEND=$VUE_APP_MYURLS_DEFAULT_BACKEND
 
@@ -84,8 +84,8 @@ COPY --from=sub-build /subconverter/base /base/
 # 短链服务
 COPY shortlink/server.py /app/shortlink/server.py
 
-# Caddy 配置 + 进程管理 + 启动脚本
-COPY Caddyfile /etc/caddy/Caddyfile
+# Caddy 配置由 entrypoint.sh 动态生成（本机/域名双模式）
+# 进程管理 + 启动脚本
 COPY supervisord.conf /etc/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
