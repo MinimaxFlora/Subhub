@@ -4,7 +4,7 @@
 基于 [cmliu/sub-web-modify](https://github.com/cmliu/sub-web-modify) 定制，品牌为 **Kejizero订阅转换**。
 
 **两种运行模式：**
-- **本机模式**（默认，不填域名）：端口直连，开箱即用
+- **本机模式**（默认，不填域名）：IP+端口直连，开箱即用
 - **域名模式**（填了三个域名）：Caddy 自动反代 + HTTPS 证书
 
 ## 功能特性
@@ -17,37 +17,48 @@
 - 🔗 自建短链服务（myurls 协议兼容，数据 SQLite 持久化）
 - 🐳 单镜像：`zhaoweiwen123/subhub`，一个容器跑全部服务
 
-## 项目结构
+---
 
+## 一、Docker Compose 部署（推荐）
+
+### 方式 1：本机模式（不填域名，IP+端口访问）
+
+创建 `docker-compose.yml`：
+
+```yaml
+services:
+  subhub:
+    image: zhaoweiwen123/subhub:latest
+    container_name: kejizero-subhub
+    restart: always
+    ports:
+      - "8080:8080"      # 前端
+      - "25500:25500"    # 后端 subconverter
+      - "7999:7999"      # 短链
+    environment:
+      # 三个域名（不填 = 本机模式，填了 = 域名模式）
+      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-}
+      BACKEND_DOMAIN: ${BACKEND_DOMAIN:-}
+      SHORTLINK_DOMAIN: ${SHORTLINK_DOMAIN:-}
+      # 前端默认调用的后端/短链完整地址（可选，不填自动推导）
+      BACKEND_URL: ${BACKEND_URL:-}
+      SHORTLINK_URL: ${SHORTLINK_URL:-}
+      # TLS 证书邮箱（域名模式用）
+      ACME_EMAIL: ${ACME_EMAIL:-admin@kejizero.xyz}
+    volumes:
+      - subhub_data:/data   # 短链 SQLite 数据持久化
+
+volumes:
+  subhub_data:
 ```
-kejizero-sub-converter/
-├── Dockerfile              # 单镜像多阶段构建（前端构建 + 后端编译 + 运行镜像）
-├── entrypoint.sh           # 启动脚本（双模式：本机端口直连 / 域名反代）
-├── supervisord.conf        # 进程管理（subconverter + shortlink + caddy）
-├── docker-compose.yml      # 一键部署（单服务）
-├── .env.example            # 环境变量模板（复制为 .env 修改）
-├── .dockerignore
-├── .github/workflows/      # Docker Hub 镜像构建工作流（手动触发）
-├── frontend/               # Vue 前端（基于 sub-web-modify 定制）
-│   ├── public/             # logo.png / favicon.ico（品牌图）
-│   ├── src/views/Subconverter.vue   # 主页面
-│   └── .env                # 构建环境变量（后端地址、链接等）
-├── backend/                # subconverter 后端（内置源码，本地编译）
-│   ├── Dockerfile          # 独立构建（可选）
-│   ├── README.md
-│   └── subconverter/       # subconverter v0.9.9 完整源码
-└── shortlink/              # 自建短链服务（myurls 协议兼容）
-    ├── Dockerfile          # 独立构建（可选）
-    └── server.py           # Python + SQLite，无第三方依赖
-```
 
-## 快速开始
-
-### 模式一：本机模式（默认，不填域名）
+启动：
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
+
+访问：
 
 | 服务 | 地址 |
 |---|---|
@@ -55,23 +66,31 @@ docker compose up -d --build
 | 后端 | http://本机IP:25500 |
 | 短链 | http://本机IP:7999 |
 
-### 模式二：域名模式（填三个域名，自动 HTTPS）
+### 方式 2：域名模式（填三个域名，自动 HTTPS）
 
-```bash
-# 复制 .env.example 为 .env 修改
-cp .env.example .env
-```
+创建 `.env`（与 docker-compose.yml 同目录）：
 
-`.env` 里填写（需已解析 A 记录到服务器）：
 ```ini
+# 三个域名（需已解析 A 记录到服务器）
 FRONTEND_DOMAIN=sub.example.com
 BACKEND_DOMAIN=api.example.com
 SHORTLINK_DOMAIN=short.example.com
+
+# 前端默认调用的后端/短链完整地址（不填自动推导为 https://对应域名）
+BACKEND_URL=https://api.example.com
+SHORTLINK_URL=https://short.example.com
+
+# TLS 证书邮箱（可选）
+ACME_EMAIL=admin@example.com
 ```
 
+然后：
+
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
+
+访问：
 
 | 服务 | 地址 |
 |---|---|
@@ -79,13 +98,79 @@ docker compose up -d --build
 | 后端 | https://BACKEND_DOMAIN |
 | 短链 | https://SHORTLINK_DOMAIN |
 
-### 前提条件
+> 镜像内 Caddy 自动为三个域名申请/续期 Let's Encrypt 证书并反代。
 
-- 域名模式：三个域名已添加 A 记录指向服务器公网 IP，开放 80/443
-- 本机模式：开放 8080/25500/7999 端口
-- 安装 Docker + Docker Compose
+---
 
-## 环境变量说明
+## 二、Docker 部署（不用 Compose）
+
+### 方式 1：本机模式（IP+端口访问）
+
+```bash
+docker run -d --name kejizero-subhub \
+  --restart=always \
+  -p 8080:8080 \
+  -p 25500:25500 \
+  -p 7999:7999 \
+  -v subhub_data:/data \
+  zhaoweiwen123/subhub:latest
+```
+
+访问：
+
+| 服务 | 地址 |
+|---|---|
+| 前端 | http://本机IP:8080 |
+| 后端 | http://本机IP:25500 |
+| 短链 | http://本机IP:7999 |
+
+### 方式 2：域名模式（填三个域名，自动 HTTPS）
+
+```bash
+docker run -d --name kejizero-subhub \
+  --restart=always \
+  -p 80:80 \
+  -p 443:443 \
+  -e FRONTEND_DOMAIN=sub.example.com \
+  -e BACKEND_DOMAIN=api.example.com \
+  -e SHORTLINK_DOMAIN=short.example.com \
+  -e BACKEND_URL=https://api.example.com \
+  -e SHORTLINK_URL=https://short.example.com \
+  -e ACME_EMAIL=admin@example.com \
+  -v subhub_data:/data \
+  zhaoweiwen123/subhub:latest
+```
+
+访问：
+
+| 服务 | 地址 |
+|---|---|
+| 前端 | https://sub.example.com |
+| 后端 | https://api.example.com |
+| 短链 | https://short.example.com |
+
+---
+
+## 三、常用命令
+
+```bash
+# 查看日志
+docker logs -f kejizero-subhub
+
+# 重启
+docker compose restart
+
+# 更新镜像
+docker pull zhaoweiwen123/subhub:latest
+docker compose up -d
+
+# 停止并删除
+docker compose down
+```
+
+---
+
+## 四、环境变量说明
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
@@ -98,18 +183,16 @@ docker compose up -d --build
 
 > 单容器架构：Caddy 一个进程伺服前端静态文件 + 反代后端(25500) + 反代短链(7999)，
 > subconverter 与短链服务由 supervisord 管理，`/data` 卷持久化短链数据。
-> 本机模式下 Caddy 监听 8080 伺服前端，后端/短链端口直接映射到宿主机。
 
-## Docker Hub 镜像（手动触发构建）
+---
 
-工作流 `.github/workflows/docker-build.yml` 构建并推送单镜像 `zhaoweiwen123/subhub:latest`。
+## 五、Docker Hub 镜像
 
-**触发方式**：GitHub Actions → Build & Push Docker Image → **Run workflow**（手动触发，不自动构建）
+- 镜像名：`zhaoweiwen123/subhub`
+- 标签：`latest`
+- 构建：GitHub Actions 手动触发（仓库 Actions → Build & Push Docker Image → Run workflow）
 
-> 需在仓库 Settings → Secrets and variables → Actions 配置
-> `DOCKERHUB_USERNAME` 和 `DOCKERHUB_TOKEN`。
-
-## 自定义品牌
+## 六、自定义品牌
 
 - `frontend/public/logo.png` — 页面头部 logo
 - `frontend/public/favicon.ico` — 浏览器标签图标
