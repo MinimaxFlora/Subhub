@@ -1,0 +1,18 @@
+# Kejizero订阅转换 - Caddy 自动反代配置
+# 域名由 docker-compose 注入环境变量自动替换（{$VAR} 语法）
+# Caddy 会自动为每个域名申请并续期 Let's Encrypt 证书
+
+{$FRONTEND_DOMAIN} {
+    reverse_proxy frontend:80
+    tls {$ACME_EMAIL}
+}
+
+{$BACKEND_DOMAIN} {
+    reverse_proxy backend:25500
+    tls {$ACME_EMAIL}
+}
+
+{$SHORTLINK_DOMAIN} {
+    reverse_proxy shortlink:7999
+    tls {$ACME_EMAIL}
+}

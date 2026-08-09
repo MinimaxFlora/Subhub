@@ -1,9 +1,11 @@
+# 单独部署 subconverter 后端（可选）
+# 推荐方式：使用根目录 docker-compose.yml 一键部署全家桶
 version: "3"
 
 services:
   subconverter:
-    image: asdlokj1qpi23/subconverter:latest
-    container_name: subconverter
+    build: .
+    container_name: kejizero-backend
     ports:
       - "25500:25500"
     restart: always

@@ -3,15 +3,19 @@
 基于 [cmliu/sub-web-modify](https://github.com/cmliu/sub-web-modify)（Vue 2 + Element UI）定制的订阅转换前端，
 品牌已更换为 **Kejizero订阅转换**。
 
-## 环境变量（.env）
+## 构建环境变量
 
 | 变量 | 说明 |
 |---|---|
 | `VUE_APP_PROJECT` | 项目仓库地址（GitHub 图标链接） |
 | `VUE_APP_SUBCONVERTER_DEFAULT_BACKEND` | 默认 subconverter 后端地址 |
-| `VUE_APP_MYURLS_DEFAULT_BACKEND` | 短链接服务 |
+| `VUE_APP_MYURLS_DEFAULT_BACKEND` | 短链服务地址 |
 | `VUE_APP_CONFIG_UPLOAD_BACKEND` | 配置上传服务 |
 | `VUE_APP_BOT_LINK` / `VUE_APP_YOUTUBE_LINK` / `VUE_APP_BILIBILI_LINK` | 社交链接（留空自动隐藏按钮） |
+
+> Docker 部署时由根目录 `docker-compose.yml` 通过 `--build-arg` 注入
+> `VUE_APP_SUBCONVERTER_DEFAULT_BACKEND` 和 `VUE_APP_MYURLS_DEFAULT_BACKEND`，
+> 自动指向你设置的后端/短链域名，无需手动改本文件。
 
 ## 本地开发
 

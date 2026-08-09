@@ -1,7 +1,8 @@
 # Kejizero订阅转换
 
-现代化订阅转换 Web 前端 + subconverter 后端，基于 [cmliu/sub-web-modify](https://github.com/cmliu/sub-web-modify) 定制：
-更换品牌为 **Kejizero订阅转换**（全新 logo），界面与功能保持原版一致。
+现代化订阅转换 Web 前端 + subconverter 后端 + 自建短链服务，基于 [cmliu/sub-web-modify](https://github.com/cmliu/sub-web-modify) 定制，
+品牌为 **Kejizero订阅转换**，支持 **Docker / Docker Compose 一键部署**：只需设置三个域名环境变量，
+Caddy 自动反代并签发 HTTPS 证书。
 
 ## 功能特性
 
@@ -10,65 +11,107 @@
 - 🔗 多格式订阅转换：Clash、Surge、Sing-Box、V2Ray、Quantumult X、Loon 等
 - 🛠 节点筛选（关键字/正则）、批量重命名、Emoji 前缀等高级选项
 - 📦 内置大量远程配置模板（ACL4SSR 规则等）
-- 🔗 短链接生成、配置上传/解析
+- 🔗 自建短链服务（myurls 协议兼容，数据 SQLite 持久化）
 
 ## 项目结构
 
 ```
 kejizero-sub-converter/
-├── frontend/          # Vue 前端（基于 sub-web-modify 定制）
-│   ├── public/        # logo.png / favicon.ico（品牌图）
-│   ├── src/views/Subconverter.vue  # 主页面
-│   └── .env           # 构建环境变量（后端地址、链接等）
-├── backend/           # subconverter 后端部署
-│   ├── README.md
-│   └── docker-compose.yml
-└── docker-compose.yml # 前后端一键部署
+├── docker-compose.yml      # 一键编排：caddy + frontend + backend + shortlink
+├── .env.example            # 环境变量模板（复制为 .env 修改）
+├── caddy/
+│   └── Caddyfile           # Caddy 反代配置（{$域名} 由环境变量注入）
+├── frontend/               # Vue 前端（基于 sub-web-modify 定制）
+│   ├── Dockerfile          # 构建时通过 ARG 注入后端/短链域名
+│   ├── nginx.conf          # SPA 部署配置（history 路由 + 缓存 + gzip）
+│   ├── public/             # logo.png / favicon.ico（品牌图）
+│   ├── src/views/Subconverter.vue   # 主页面
+│   └── .env                # 构建环境变量（后端地址、链接等）
+├── backend/                # subconverter 后端
+│   ├── Dockerfile          # 基于 asdlokj1qpi23/subconverter 官方镜像
+│   └── README.md
+└── shortlink/              # 自建短链服务（myurls 协议兼容）
+    ├── Dockerfile
+    └── server.py           # Python + SQLite，无第三方依赖
 ```
 
-## 快速开始（Docker 一键）
+## 快速开始（Docker Compose 一键部署）
 
 ```bash
+# 1. 克隆/上传本仓库后：
+cp .env.example .env
+
+# 2. 编辑 .env，只改三个域名（必须先解析 A 记录到本机）：
+#    FRONTEND_DOMAIN=sub.你的域名.com
+#    BACKEND_DOMAIN=api.你的域名.com
+#    SHORTLINK_DOMAIN=short.你的域名.com
+
+# 3. 一键构建启动
 docker compose up -d --build
-# 前端: http://localhost:8080
-# 后端: http://localhost:25500
+
+# 4. 完成！Caddy 自动为三个域名申请 HTTPS 证书
 ```
+
+部署完成后：
+| 服务 | 域名 | 说明 |
+|---|---|---|
+| 前端 | `https://FRONTEND_DOMAIN` | Kejizero订阅转换 页面 |
+| 后端 | `https://BACKEND_DOMAIN` | subconverter API |
+| 短链 | `https://SHORTLINK_DOMAIN` | 短链生成服务 |
+
+前端会自动把默认后端指向 `https://BACKEND_DOMAIN`、默认短链指向 `https://SHORTLINK_DOMAIN`。
+
+### 前提条件
+
+- 三个域名已添加 A 记录指向服务器公网 IP
+- 服务器开放 80/443 端口
+- 安装 Docker + Docker Compose
 
 ## 单独部署
 
-### 后端（subconverter）
-
-详见 [backend/README.md](backend/README.md)，或直接：
+### 仅后端（subconverter）
 
 ```bash
-docker run -d --restart=always -p 25500:25500 asdlokj1qpi23/subconverter:latest
+docker build -t kejizero-backend ./backend
+docker run -d --restart=always -p 25500:25500 kejizero-backend
 ```
 
-### 前端（Cloudflare Pages / EdgeOne Pages / Vercel / Docker）
+### 仅前端（Cloudflare Pages / EdgeOne / Vercel）
 
-1. Fork/上传本仓库
-2. 修改 `frontend/.env`：
+构建前设置环境变量：
 
 ```ini
-# 默认后端地址（改成你部署的 subconverter 地址）
-VUE_APP_SUBCONVERTER_DEFAULT_BACKEND=https://your-backend.example.com
+VUE_APP_SUBCONVERTER_DEFAULT_BACKEND=https://你的后端域名
+VUE_APP_MYURLS_DEFAULT_BACKEND=https://你的短链域名
 ```
 
-3. 构建配置：
-   - 框架预设：Vue
-   - 构建命令：`npm run build`（或 `yarn build`）
-   - 输出目录：`dist`
-4. 部署完成
+构建命令：`npm run build`（输出 `dist/`）
 
-> 注意：前端默认 `VUE_APP_SUBCONVERTER_DEFAULT_BACKEND` 为 `http://localhost:25500`，
-> 生产环境务必改为你的实际后端域名（后端需支持 CORS，subconverter 默认已开启）。
+### 仅短链服务
+
+```bash
+docker build -t kejizero-shortlink ./shortlink
+docker run -d --restart=always -p 7999:7999 \
+  -e BASE_URL=https://你的短链域名 \
+  -v shortlink_data:/data \
+  kejizero-shortlink
+```
 
 ## 自定义品牌
 
 - `frontend/public/logo.png` — 页面头部 logo
 - `frontend/public/favicon.ico` — 浏览器标签图标
-- `frontend/.env` — 项目名、链接、后端地址等
+- `frontend/.env` — 项目名、链接等构建变量
 - `frontend/src/views/Subconverter.vue` — 页面文案（标题、描述等）
+
+## 环境变量说明
+
+| 变量 | 必填 | 说明 |
+|---|---|---|
+| `FRONTEND_DOMAIN` | ✅ | 前端域名 |
+| `BACKEND_DOMAIN` | ✅ | 后端（subconverter）域名 |
+| `SHORTLINK_DOMAIN` | ✅ | 短链域名 |
+| `ACME_EMAIL` | 可选 | Let's Encrypt 证书通知邮箱（默认 admin@kejizero.xyz） |
 
 ## 致谢
 
