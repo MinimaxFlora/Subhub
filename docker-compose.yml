@@ -1,31 +1,25 @@
 # ============================================================
-# Kejizero订阅转换 - 一键部署全家桶
+# Kejizero订阅转换 - 单镜像一键部署
 #
-# 三个域名通过 environment 传入（也可用 .env 文件覆盖）：
-#   FRONTEND_DOMAIN  前端域名   默认 localhost（本机）
-#   BACKEND_DOMAIN   后端域名   默认 localhost（本机）
-#   SHORTLINK_DOMAIN 短链域名   默认 localhost（本机）
+# 一个镜像 zhaoweiwen123/SubHub 包含全部服务：
+#   前端(Vue) + 后端(subconverter) + 短链 + Caddy
 #
-# 不填任何变量 -> 直接本机访问（http://localhost）
-#   前端: http://localhost          后端: http://localhost:25500
-#   短链: http://localhost:7999
-# 填了真实域名 -> Caddy 自动反代 + 自动申请 HTTPS 证书
+# 三个域名通过 environment 传入（不填默认本机 localhost）：
+#   FRONTEND_DOMAIN  前端域名   默认 localhost
+#   BACKEND_DOMAIN   后端域名   默认 localhost
+#   SHORTLINK_DOMAIN 短链域名   默认 localhost
 #
-# 用法：
-#   1. 直接启动（本机模式）：docker compose up -d --build
-#   2. 公网模式：
-#      export FRONTEND_DOMAIN=sub.example.com
-#      export BACKEND_DOMAIN=api.example.com
-#      export SHORTLINK_DOMAIN=short.example.com
-#      docker compose up -d --build
-#   或复制 .env.example 为 .env 修改
+# 本机模式：docker compose up -d --build
+#   前端 http://localhost | 后端 http://localhost:25500 | 短链 http://localhost:7999
+#
+# 公网模式：填三个域名 -> Caddy 自动反代 + 自动 HTTPS 证书
 # ============================================================
 
 services:
-  # ---- 网关：自动反代 + HTTPS 证书 ----
-  caddy:
-    image: caddy:2-alpine
-    container_name: kejizero-caddy
+  subhub:
+    build: .
+    image: zhaoweiwen123/SubHub
+    container_name: kejizero-subhub
     restart: always
     ports:
       - "80:80"
@@ -35,52 +29,13 @@ services:
       FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-localhost}
       BACKEND_DOMAIN: ${BACKEND_DOMAIN:-localhost}
       SHORTLINK_DOMAIN: ${SHORTLINK_DOMAIN:-localhost}
+      # 前端调用的后端/短链完整地址（不填自动推导）
+      BACKEND_URL: ${BACKEND_URL:-}
+      SHORTLINK_URL: ${SHORTLINK_URL:-}
+      # TLS 证书邮箱
       ACME_EMAIL: ${ACME_EMAIL:-admin@kejizero.xyz}
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - frontend
-      - backend
-      - shortlink
-
-  # ---- 前端：Kejizero订阅转换 ----
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        # 前端默认调用的后端/短链地址（不填默认本机）
-        VUE_APP_SUBCONVERTER_DEFAULT_BACKEND: ${BACKEND_URL:-http://localhost:25500}
-        VUE_APP_MYURLS_DEFAULT_BACKEND: ${SHORTLINK_URL:-http://localhost:7999}
-    container_name: kejizero-frontend
-    restart: always
-    expose:
-      - "80"
-
-  # ---- 后端：subconverter ----
-  backend:
-    build: ./backend
-    container_name: kejizero-backend
-    restart: always
-    expose:
-      - "25500"
-
-  # ---- 短链服务 ----
-  shortlink:
-    build: ./shortlink
-    container_name: kejizero-shortlink
-    restart: always
-    environment:
-      # 短链生成的展示域名（不填默认本机）
-      BASE_URL: ${SHORTLINK_URL:-http://localhost:7999}
-      DB_PATH: /data/urls.db
-    volumes:
-      - shortlink_data:/data
-    expose:
-      - "7999"
+      - subhub_data:/data   # 短链 SQLite 数据持久化
 
 volumes:
-  caddy_data:
-  caddy_config:
-  shortlink_data:
+  subhub_data:

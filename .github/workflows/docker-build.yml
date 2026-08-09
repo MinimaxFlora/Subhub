@@ -1,4 +1,4 @@
-name: Build & Push Docker Images
+name: Build & Push Docker Image
 
 on:
   # 手动触发：可自定义三个域名（不填则默认本机 localhost）
@@ -23,8 +23,11 @@ on:
       - 'frontend/**'
       - 'backend/**'
       - 'shortlink/**'
+      - 'Dockerfile'
+      - 'Caddyfile'
+      - 'entrypoint.sh'
+      - 'supervisord.conf'
       - 'docker-compose.yml'
-      - '.env.example'
       - '.github/workflows/docker-build.yml'
 
 jobs:
@@ -40,7 +43,7 @@ jobs:
           FRONTEND_DOMAIN="${{ github.event.inputs.frontend_domain }}"
           BACKEND_DOMAIN="${{ github.event.inputs.backend_domain }}"
           SHORTLINK_DOMAIN="${{ github.event.inputs.shortlink_domain }}"
-          # 未输入时默认本机地址（与 docker-compose 默认值一致）
+          # 未输入时默认本机地址
           [ -z "$FRONTEND_DOMAIN" ] && FRONTEND_DOMAIN="localhost"
           [ -z "$BACKEND_DOMAIN" ] && BACKEND_DOMAIN="localhost"
           [ -z "$SHORTLINK_DOMAIN" ] && SHORTLINK_DOMAIN="localhost"
@@ -66,30 +69,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build images (docker compose)
-        run: |
-          docker compose build
+      - name: Build & Push single image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            zhaoweiwen123/SubHub:${{ github.sha }}
+            zhaoweiwen123/SubHub:latest
+          build-args: |
+            VUE_APP_SUBCONVERTER_DEFAULT_BACKEND=${{ env.BACKEND_URL }}
+            VUE_APP_MYURLS_DEFAULT_BACKEND=${{ env.SHORTLINK_URL }}
 
-      - name: Tag & Push images
+      - name: Output image
         run: |
-          IMG_PREFIX="zhaoweiwen123/kejizero"
-          TAG="${{ github.sha }}"
-          docker tag kejizero-frontend  "${IMG_PREFIX}-frontend:${TAG}"
-          docker tag kejizero-frontend  "${IMG_PREFIX}-frontend:latest"
-          docker tag kejizero-backend   "${IMG_PREFIX}-backend:${TAG}"
-          docker tag kejizero-backend   "${IMG_PREFIX}-backend:latest"
-          docker tag kejizero-shortlink "${IMG_PREFIX}-shortlink:${TAG}"
-          docker tag kejizero-shortlink "${IMG_PREFIX}-shortlink:latest"
-          docker push "${IMG_PREFIX}-frontend:${TAG}"
-          docker push "${IMG_PREFIX}-frontend:latest"
-          docker push "${IMG_PREFIX}-backend:${TAG}"
-          docker push "${IMG_PREFIX}-backend:latest"
-          docker push "${IMG_PREFIX}-shortlink:${TAG}"
-          docker push "${IMG_PREFIX}-shortlink:latest"
-
-      - name: Output image list
-        run: |
-          echo "已推送镜像 (Docker Hub: zhaoweiwen123):"
-          echo "  kejizero-frontend :${{ github.sha }} / latest"
-          echo "  kejizero-backend  :${{ github.sha }} / latest"
-          echo "  kejizero-shortlink:${{ github.sha }} / latest"
+          echo "已推送镜像 (Docker Hub):"
+          echo "  zhaoweiwen123/SubHub:${{ github.sha }}"
+          echo "  zhaoweiwen123/SubHub:latest"
