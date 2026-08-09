@@ -13,7 +13,7 @@
 - 🛠 节点筛选（关键字/正则）、批量重命名、Emoji 前缀等高级选项
 - 📦 内置大量远程配置模板（ACL4SSR 规则等）
 - 🔗 自建短链服务（myurls 协议兼容，数据 SQLite 持久化）
-- 🐳 单镜像：`zhaoweiwen123/SubHub`，一个容器跑全部服务
+- 🐳 单镜像：`zhaoweiwen123/subhub`，一个容器跑全部服务
 
 ## 项目结构
 
@@ -94,8 +94,8 @@ Caddy 自动为三个域名申请 HTTPS 证书；前端自动把默认后端指�
 
 工作流 `.github/workflows/docker-build.yml` 构建并推送单镜像：
 
-- `zhaoweiwen123/SubHub:{commit-sha}`
-- `zhaoweiwen123/SubHub:latest`
+- `zhaoweiwen123/subhub:{commit-sha}`
+- `zhaoweiwen123/subhub:latest`
 
 触发方式：
 - **手动**：Actions → Build & Push Docker Image → Run workflow（可选填三个域名）

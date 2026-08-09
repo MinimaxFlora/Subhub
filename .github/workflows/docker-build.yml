@@ -75,8 +75,8 @@ jobs:
           context: .
           push: true
           tags: |
-            zhaoweiwen123/SubHub:${{ github.sha }}
-            zhaoweiwen123/SubHub:latest
+            zhaoweiwen123/subhub:${{ github.sha }}
+            zhaoweiwen123/subhub:latest
           build-args: |
             VUE_APP_SUBCONVERTER_DEFAULT_BACKEND=${{ env.BACKEND_URL }}
             VUE_APP_MYURLS_DEFAULT_BACKEND=${{ env.SHORTLINK_URL }}
@@ -84,5 +84,5 @@ jobs:
       - name: Output image
         run: |
           echo "已推送镜像 (Docker Hub):"
-          echo "  zhaoweiwen123/SubHub:${{ github.sha }}"
-          echo "  zhaoweiwen123/SubHub:latest"
+          echo "  zhaoweiwen123/subhub:${{ github.sha }}"
+          echo "  zhaoweiwen123/subhub:latest"

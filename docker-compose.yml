@@ -1,7 +1,7 @@
 # ============================================================
 # Kejizero订阅转换 - 单镜像一键部署
 #
-# 一个镜像 zhaoweiwen123/SubHub 包含全部服务：
+# 一个镜像 zhaoweiwen123/subhub 包含全部服务：
 #   前端(Vue) + 后端(subconverter) + 短链 + Caddy
 #
 # 三个域名通过 environment 传入（不填默认本机 localhost）：
@@ -18,7 +18,7 @@
 services:
   subhub:
     build: .
-    image: zhaoweiwen123/SubHub
+    image: zhaoweiwen123/subhub
     container_name: kejizero-subhub
     restart: always
     ports:
