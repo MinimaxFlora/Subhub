@@ -94,7 +94,6 @@ Caddy 自动为三个域名申请 HTTPS 证书；前端自动把默认后端指�
 
 工作流 `.github/workflows/docker-build.yml` 构建并推送单镜像：
 
-- `zhaoweiwen123/subhub:{commit-sha}`
 - `zhaoweiwen123/subhub:latest`
 
 触发方式：
