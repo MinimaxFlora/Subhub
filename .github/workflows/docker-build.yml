@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Read domains from .env.example
         id: domains
@@ -31,13 +31,13 @@ jobs:
           echo "构建模式: $([ -n "$BACKEND_DOMAIN" ] && echo 域名模式 || echo 本机模式)"
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & Push single image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7.3.0
         with:
           context: .
           push: true
