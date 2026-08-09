@@ -1,7 +1,7 @@
 name: Build & Push Docker Images
 
 on:
-  # 手动触发：可自定义三个域名（不填则使用 .env 默认值）
+  # 手动触发：可自定义三个域名（不填则默认本机 localhost）
   workflow_dispatch:
     inputs:
       frontend_domain:
@@ -25,6 +25,7 @@ on:
       - 'shortlink/**'
       - 'docker-compose.yml'
       - '.env.example'
+      - '.github/workflows/docker-build.yml'
 
 jobs:
   build-and-push:
@@ -39,14 +40,25 @@ jobs:
           FRONTEND_DOMAIN="${{ github.event.inputs.frontend_domain }}"
           BACKEND_DOMAIN="${{ github.event.inputs.backend_domain }}"
           SHORTLINK_DOMAIN="${{ github.event.inputs.shortlink_domain }}"
-          # 未输入时从 .env.example 读取默认值
-          [ -z "$FRONTEND_DOMAIN" ] && FRONTEND_DOMAIN=$(grep FRONTEND_DOMAIN .env.example | cut -d= -f2 | tr -d ' ')
-          [ -z "$BACKEND_DOMAIN" ] && BACKEND_DOMAIN=$(grep BACKEND_DOMAIN .env.example | cut -d= -f2 | tr -d ' ')
-          [ -z "$SHORTLINK_DOMAIN" ] && SHORTLINK_DOMAIN=$(grep SHORTLINK_DOMAIN .env.example | cut -d= -f2 | tr -d ' ')
+          # 未输入时默认本机地址（与 docker-compose 默认值一致）
+          [ -z "$FRONTEND_DOMAIN" ] && FRONTEND_DOMAIN="localhost"
+          [ -z "$BACKEND_DOMAIN" ] && BACKEND_DOMAIN="localhost"
+          [ -z "$SHORTLINK_DOMAIN" ] && SHORTLINK_DOMAIN="localhost"
           echo "FRONTEND_DOMAIN=$FRONTEND_DOMAIN" >> $GITHUB_ENV
           echo "BACKEND_DOMAIN=$BACKEND_DOMAIN" >> $GITHUB_ENV
           echo "SHORTLINK_DOMAIN=$SHORTLINK_DOMAIN" >> $GITHUB_ENV
-          echo "本次构建域名: 前端=$FRONTEND_DOMAIN 后端=$BACKEND_DOMAIN 短链=$SHORTLINK_DOMAIN"
+          # 前端调用的后端/短链地址：填了域名用 https，否则本机 http
+          if [ "$BACKEND_DOMAIN" != "localhost" ]; then
+            echo "BACKEND_URL=https://$BACKEND_DOMAIN" >> $GITHUB_ENV
+          else
+            echo "BACKEND_URL=http://localhost:25500" >> $GITHUB_ENV
+          fi
+          if [ "$SHORTLINK_DOMAIN" != "localhost" ]; then
+            echo "SHORTLINK_URL=https://$SHORTLINK_DOMAIN" >> $GITHUB_ENV
+          else
+            echo "SHORTLINK_URL=http://localhost:7999" >> $GITHUB_ENV
+          fi
+          echo "构建参数: 前端=$FRONTEND_DOMAIN 后端=$BACKEND_DOMAIN 短链=$SHORTLINK_DOMAIN"
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
