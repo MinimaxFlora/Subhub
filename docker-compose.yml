@@ -1,12 +1,12 @@
 # ============================================================
 # Kejizero订阅转换 - 单镜像一键部署
 #
-# 一个镜像 zhaoweiwen123/subhub 包含全部服务：
-#   前端(Vue) + 后端(subconverter) + 短链 + Caddy
+# 直接拉取 Docker Hub 镜像 zhaoweiwen123/subhub（无需本地构建）
+# 镜像包含全部服务：前端(Vue) + 后端(subconverter) + 短链 + Caddy
 #
 # 两种模式（通过 environment 设置域名切换）：
 #
-# 1. 本机模式（默认，不填域名）——端口直连：
+# 1. 本机模式（默认，不填域名）——IP+端口直连：
 #      前端 http://本机IP:8080
 #      后端 http://本机IP:25500
 #      短链 http://本机IP:7999
@@ -15,23 +15,17 @@
 #      https://FRONTEND_DOMAIN | https://BACKEND_DOMAIN | https://SHORTLINK_DOMAIN
 #
 # 用法：
-#   本机模式: docker compose up -d --build
+#   本机模式: docker compose up -d
 #   域名模式: 在 .env 或 environment 里填三个域名再 up
 # ============================================================
 
 services:
   subhub:
-    build:
-      context: .
-      args:
-        # 前端默认调用的后端/短链地址（从 .env 读取，默认本机）
-        VUE_APP_SUBCONVERTER_DEFAULT_BACKEND: ${BACKEND_URL:-http://localhost:25500}
-        VUE_APP_MYURLS_DEFAULT_BACKEND: ${SHORTLINK_URL:-http://localhost:7999}
-    image: zhaoweiwen123/subhub
+    image: zhaoweiwen123/subhub:latest
     container_name: kejizero-subhub
     restart: always
     ports:
-      # 本机模式：端口直连
+      # 本机模式：IP+端口直连
       - "8080:8080"      # 前端
       - "25500:25500"    # 后端 subconverter
       - "7999:7999"      # 短链
@@ -43,7 +37,7 @@ services:
       FRONTEND_DOMAIN: ${FRONTEND_DOMAIN:-}
       BACKEND_DOMAIN: ${BACKEND_DOMAIN:-}
       SHORTLINK_DOMAIN: ${SHORTLINK_DOMAIN:-}
-      # 前端调用的后端/短链完整地址（可选，默认自动推导）
+      # 前端默认调用的后端/短链完整地址（可选，不填自动推导）
       BACKEND_URL: ${BACKEND_URL:-}
       SHORTLINK_URL: ${SHORTLINK_URL:-}
       # TLS 证书邮箱（域名模式用）
