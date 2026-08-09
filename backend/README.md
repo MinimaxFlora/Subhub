@@ -50,5 +50,5 @@ backend/
 ## 安全建议
 
 - 修改 `subconverter/base/pref.ini` 中的 `api_access_token`，避免配置被篡改
-- 公网部署通过 Caddy/nginx 反代 + HTTPS（根目录 compose 已内置）
+- 公网部署通过 Caddy 反代 + HTTPS（根目录 compose 已内置）
 - 如需限流/防滥用，可在反代层配置速率限制

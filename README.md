@@ -28,8 +28,6 @@ kejizero-sub-converter/
 ├── .dockerignore
 ├── .github/workflows/      # Docker Hub 镜像构建工作流
 ├── frontend/               # Vue 前端（基于 sub-web-modify 定制）
-│   ├── Dockerfile          # 独立构建（可选）
-│   ├── nginx.conf          # 独立部署用
 │   ├── public/             # logo.png / favicon.ico（品牌图）
 │   ├── src/views/Subconverter.vue   # 主页面
 │   └── .env                # 构建环境变量（后端地址、链接等）
